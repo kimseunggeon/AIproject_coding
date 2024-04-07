@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -55,15 +56,26 @@ public class project1{
 	   }
 	
 	@PostMapping("/download_model")
-	public ResponseEntity<InputStreamResource> fileDownload() throws IOException{
-	    Path filePath = Paths.get("<file_path_string>");
-	    InputStreamResource resource = new InputStreamResource(new FileInputStream(filePath.toString()));
-	    String fileName = "model.h5";
-		System.out.println("Success download input excel file : " + filePath);
-	    return ResponseEntity.ok()
-	            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-	            .cacheControl(CacheControl.noCache())
-	            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
-	            .body(resource);
+	@ResponseBody()
+	public ResponseEntity<InputStreamResource> download(@RequestBody Object json) throws  JsonParseException, JsonMappingException, IOException{
+	    
+		RestTemplate restTemplate = new RestTemplate();
+	    
+	    // 도커 서버 url
+	    String url = "http://localhost:8000/download_model";
+	    
+	    //header  :   headers.set("헤더이름", "값");
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(new MediaType("application","json",Charset.forName("UTF-8")));//contentType
+	    headers.setAccept(Arrays.asList(new MediaType[] { MediaType.APPLICATION_JSON }));//accept
+	    
+	    //body
+	    LinkedHashMap<String,String> body = (LinkedHashMap)json;
+	    // HttpEntity = header + body
+	    HttpEntity<Map<String, String>> entity = new HttpEntity<Map<String, String>>(body, headers);
+	    // HTTP 요청 : 결과 String
+	    ResponseEntity<InputStreamResource> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, MediaType.APPLICATION_OCTET_STREAM);
+	    
+	    return responseEntity;
 	}
 }
